@@ -46,3 +46,6 @@ Thumbs.db
 # Firebase local config - ne jamais commiter les vraies clés
 src/environments/environment.ts
 src/environments/environment.development.ts
+
+# Firebase Hosting cache local
+.firebase/

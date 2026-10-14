@@ -52,6 +52,19 @@ firebase deploy --only firestore:rules
 Règles : lecture publique démo, écriture validée `title 1-120 + completed bool`, pas de champ extra.
 Version stricte avec Auth disponible en commentaire dans le fichier.
 
+## Déploiement Hosting
+
+Fichiers : `firebase.json` + `.firebaserc` (projet `to-do-list-app-751f8`).
+
+```bash
+npm run build
+npx -y firebase-tools@latest use to-do-list-app-751f8
+npx -y firebase-tools@latest deploy --only hosting,firestore:rules
+```
+
+URL attendue : `https://to-do-list-app-751f8.web.app`
+Vérifie : page `Mes tâches` + compteur + ajout temps réel.
+
 ## Structure du code
 
 - `src/main.ts` : bootstrap `App`
