@@ -34,7 +34,11 @@ Ouvre `http://localhost:4200/` :
 
 ## Règles Firestore production
 
-Fichier : `firestore.rules`
+Fichier : `firestore.rules` — Auth anonyme obligatoire (`request.auth != null`) + écriture validée.
+
+1. Active le provider : console `Authentification > Méthode de connexion > Anonyme > Activer`.
+2. Publie les règles : `Firestore Database > Règles` → colle `firestore.rules` → `Publier`.
+3. Redéploie l'app (le code signe en anonyme au démarrage) : voir section Hosting.
 
 Déploiement console (sans CLI) :
 1. Ouvre `Firestore Database > Règles`

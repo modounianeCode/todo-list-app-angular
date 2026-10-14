@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import {
   addDoc,
   collection,
@@ -20,6 +21,7 @@ export class TaskService {
   readonly tasks = signal<Task[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly authReady = signal(false);
 
   constructor() {
     const cfg = environment.firebase as Record<string, string>;
@@ -32,28 +34,50 @@ export class TaskService {
     }
     try {
       const app = initializeApp(environment.firebase);
+      const auth = getAuth(app);
       this.db = getFirestore(app);
-      const col = collection(this.db, 'tasks');
-      onSnapshot(
-        col,
-        (snap) => {
-          const list: Task[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as Omit<Task, 'id'>),
-          }));
-          list.sort((a, b) => {
-            const ta = this.toMillis(a.createdAt);
-            const tb = this.toMillis(b.createdAt);
-            return tb - ta;
-          });
-          this.tasks.set(list);
-          this.loading.set(false);
+      const db = this.db;
+
+      onAuthStateChanged(
+        auth,
+        (user) => {
+          if (!user) return;
+          this.authReady.set(true);
+          const col = collection(db, 'tasks');
+          onSnapshot(
+            col,
+            (snap) => {
+              const list: Task[] = snap.docs.map((d) => ({
+                id: d.id,
+                ...(d.data() as Omit<Task, 'id'>),
+              }));
+              list.sort((a, b) => this.toMillis(b.createdAt) - this.toMillis(a.createdAt));
+              this.tasks.set(list);
+              this.loading.set(false);
+            },
+            (err) => {
+              this.error.set(`Firestore erreur lecture : ${err.message}`);
+              this.loading.set(false);
+            }
+          );
         },
         (err) => {
-          this.error.set(`Firestore erreur lecture : ${err.message}`);
+          this.error.set(`Auth erreur : ${err.message}`);
           this.loading.set(false);
         }
       );
+
+      signInAnonymously(auth).catch((e) => {
+        const code = (e as { code?: string })?.code ?? '';
+        if (code.includes('admin-restricted-operation') || code.includes('operation-not-allowed')) {
+          this.error.set(
+            'Auth anonyme désactivée : console Firebase > Authentification > Méthode de connexion > Anonyme > Activer'
+          );
+        } else {
+          this.error.set(`Connexion anonyme impossible : ${(e as Error).message}`);
+        }
+        this.loading.set(false);
+      });
     } catch (e) {
       this.error.set(`Firebase init impossible : ${(e as Error).message}`);
       this.loading.set(false);
@@ -70,6 +94,7 @@ export class TaskService {
 
   private requireDb(): Firestore {
     if (!this.db) throw new Error('Firestore non initialisé');
+    if (!this.authReady()) throw new Error('Auth en cours, réessaie dans une seconde');
     return this.db;
   }
 
