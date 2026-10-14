@@ -91,3 +91,10 @@ Note : warning budget `500 kB` dépassé à cause de `firebase`, normal et non b
 - `Firebase non configuré` : vérifie les 2 fichiers `environment.*.ts`
 - `PERMISSION_DENIED` : règles non publiées ou trop strictes, republie `firestore.rules`
 - Liste vide après ajout : vérifie `Firestore > Données > tasks` et la région `europe-west1`
+
+## Sécurité
+
+- `npm audit` signale 4 vulnérabilités `high` transitives via `@grpc/grpc-js` + `firebase`.
+  `npm audit fix --force` proposerait un downgrade cassant vers `firebase@9.14.0` : refusé.
+  Risque accepté côté client web en attendant le correctif upstream Firebase.
+  Suivi : onglet `Security > Dependabot` du repo GitHub.
