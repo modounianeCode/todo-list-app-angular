@@ -1,59 +1,80 @@
-# ToDoListApp
+# ToDoListApp — Angular 22 + Firebase Firestore
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.2.
+Application de gestion de tâches : créer, lister, cocher terminée, modifier, supprimer.
+Temps réel via Firestore, collection `tasks`.
 
-## Development server
+## Prérequis
 
-To start a local development server, run:
+- Node 22, npm 10
+- Projet Firebase `to-do-list-app-751f8` avec Firestore `(default)` en `europe-west1`
 
-```bash
-ng serve
-```
+## Configuration Firebase (local, non commité)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+1. Copie le template :
+   ```bash
+   cp src/environments/environment.example.ts src/environments/environment.ts
+   cp src/environments/environment.example.ts src/environments/environment.development.ts
+   ```
+2. Colle ton `firebaseConfig` de `console.firebase.google.com > Paramètres projet > Vos applications` dans les 2 fichiers.
+3. Ne committe jamais les vraies clés : `environment.ts` et `environment.development.ts` sont dans `.gitignore`.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Lancer en local
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+Ouvre `http://localhost:4200/` :
+- Écris un titre + `Ajouter`
+- Coche la case pour basculer Terminée / À faire
+- `Modifier` puis `Enregistrer` ou `Annuler`
+- `Supprimer` pour effacer
+- Compteur `X / Y terminées` en haut
 
-To build the project run:
+## Règles Firestore production
+
+Fichier : `firestore.rules`
+
+Déploiement console (sans CLI) :
+1. Ouvre `Firestore Database > Règles`
+2. Colle le contenu de `firestore.rules`
+3. Clique `Publier`
+
+Déploiement CLI :
+```bash
+npm i -g firebase-tools
+firebase login
+firebase use to-do-list-app-751f8
+firebase deploy --only firestore:rules
+```
+
+Règles : lecture publique démo, écriture validée `title 1-120 + completed bool`, pas de champ extra.
+Version stricte avec Auth disponible en commentaire dans le fichier.
+
+## Structure du code
+
+- `src/main.ts` : bootstrap `App`
+- `src/app/app.ts` : état local avec `signal`, actions `add/toggle/startEdit/saveEdit/remove`
+- `src/app/app.html` : formulaire + liste temps réel + états chargement / vide / erreur
+- `src/app/app.css` : carte blanche simple
+- `src/app/models/task.model.ts` : `Task { id?, title, completed, createdAt? }`
+- `src/app/services/task.service.ts` : `initializeApp`, `getFirestore`, `onSnapshot`, `addDoc`, `updateDoc`, `deleteDoc`
+- `src/environments/` : `environment.ts`, `environment.development.ts` (ignorés), `environment.example.ts` (template)
+- `firestore.rules` : règles production validées
+
+## Tests et build
 
 ```bash
-ng build
+npm run build
+npx ng test --watch=false
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Attendu : build vert dans `dist/to-do-list-app`, 3 tests verts.
+Note : warning budget `500 kB` dépassé à cause de `firebase`, normal et non bloquant.
 
-## Running unit tests
+## Dépannage
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- `Firebase non configuré` : vérifie les 2 fichiers `environment.*.ts`
+- `PERMISSION_DENIED` : règles non publiées ou trop strictes, republie `firestore.rules`
+- Liste vide après ajout : vérifie `Firestore > Données > tasks` et la région `europe-west1`

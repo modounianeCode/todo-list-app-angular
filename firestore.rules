@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Collection utilisée par to-do-list-app
+    match /tasks/{taskId} {
+      // Lecture publique pour la démo scolaire (sans Auth).
+      // Version stricte avec Auth : remplace par `allow read: if request.auth != null;`
+      allow read: if true;
+
+      // Création : titre 1-120 caractères, completed booléen obligatoire
+      allow create: if request.resource.data.keys().hasOnly(['title', 'completed', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.completed is bool;
+
+      // Modification : même validation, pas de champ surprise
+      allow update: if request.resource.data.keys().hasOnly(['title', 'completed', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.completed is bool;
+
+      // Suppression autorisée pour la démo.
+      // Version stricte : `allow delete: if request.auth != null;`
+      allow delete: if true;
+    }
+  }
+}
